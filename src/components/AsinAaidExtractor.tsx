@@ -13,7 +13,6 @@ import {
   Typography
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import DeleteIcon from '@mui/icons-material/Delete';
 
 interface Mapping {
   asin: string;
@@ -30,7 +29,6 @@ const AsinAaidExtractor: React.FC = () => {
   });
 
   const showSnack = (msg: string) => setSnack({ open: true, msg });
-
   const closeSnack = () => setSnack({ open: false, msg: '' });
 
   const parseHtml = () => {
@@ -56,7 +54,7 @@ const AsinAaidExtractor: React.FC = () => {
         const asin = asinValues[i].trim();
         const aaid = idValues[i].trim();
         if (!asin || !aaid) continue;
-        map[asin] = aaid; // last one wins for duplicate ASIN
+        map[asin] = aaid;
       }
 
       const result: Mapping[] = Object.entries(map).map(([asin, aaid]) => ({
@@ -66,16 +64,10 @@ const AsinAaidExtractor: React.FC = () => {
 
       setMappings(result);
       showSnack(`Extracted ${result.length} unique mappings`);
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
       setError('Failed to parse HTML');
     }
-  };
-
-  const clearAll = () => {
-    setInput('');
-    setMappings([]);
-    setError(null);
   };
 
   const copyAsinAaid = async () => {
@@ -96,28 +88,32 @@ const AsinAaidExtractor: React.FC = () => {
         <CardHeader
           title="ASIN & AAID Extractor"
           subheader="Paste HTML from your AAID page and extract unique ASIN: AAID mappings."
-          action={
-            <IconButton onClick={clearAll}>
-              <DeleteIcon />
-            </IconButton>
-          }
         />
-        <Divider />
         <CardContent>
           <TextField
             label="Input HTML"
             placeholder="Paste HTML here..."
             multiline
             minRows={8}
+            rows={8} // Initial number of rows
+            maxRows={8} // Maximum number of rows before scrolling
             fullWidth
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            sx={{
+              '& .MuiInputBase-inputMultiline': {
+                maxHeight: '220px',
+                overflowY: 'auto'
+              }
+            }}
           />
+
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>
               {error}
             </Alert>
           )}
+
           <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
             <Button variant="contained" onClick={parseHtml} disabled={!input.trim()}>
               Extract ASIN/AAID
@@ -131,22 +127,14 @@ const AsinAaidExtractor: React.FC = () => {
           title="Results"
           subheader={
             mappings.length
-              ? `${mappings.length} unique ASIN: AAID pairs`
+              ? `Unique pairs discovered: ${mappings.length}`
               : 'No results yet.'
           }
           action={
-            mappings.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <IconButton onClick={copyAsinAaid}>
-                  <ContentCopyIcon />
-                </IconButton>
-                <IconButton onClick={copyAsinList}>
-                  <ContentCopyIcon />
-                </IconButton>
-              </Box>
-            )
+            mappings.length > 0
           }
         />
+
         <Divider />
         <CardContent>
           {mappings.length === 0 && (
@@ -157,7 +145,16 @@ const AsinAaidExtractor: React.FC = () => {
 
           {mappings.length > 0 && (
             <Box sx={{ display: 'grid', gap: 1 }}>
-              <Typography variant="subtitle2">ASIN: AAID</Typography>
+              <Typography
+                variant="subtitle2"
+                sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+              >
+                ASIN:AAID
+              <IconButton size="small" onClick={copyAsinAaid}>
+                <ContentCopyIcon fontSize="small"/>
+              </IconButton>
+              </Typography>
+
               <Box
                 component="pre"
                 sx={{
@@ -173,9 +170,16 @@ const AsinAaidExtractor: React.FC = () => {
                 {mappings.map((m) => `${m.asin}: ${m.aaid}`).join('\n')}
               </Box>
 
-              <Typography variant="subtitle2" sx={{ mt: 2 }}>
-                ASIN list (comma separated)
+              <Typography
+                variant="subtitle2"
+                sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+              >
+                ASIN
+                <IconButton size="small" onClick={copyAsinList}>
+                  <ContentCopyIcon fontSize="small"/>
+                </IconButton>
               </Typography>
+
               <Box
                 component="pre"
                 sx={{
