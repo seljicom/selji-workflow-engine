@@ -13,6 +13,7 @@ import {
   Typography
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 interface Mapping {
   asin: string;
@@ -70,6 +71,12 @@ const AsinAaidExtractor: React.FC = () => {
     }
   };
 
+  const clearAll = () => {
+    setInput('');
+    setMappings([]);
+    setError(null);
+  };
+
   const copyAsinAaid = async () => {
     const text = mappings.map((m) => `${m.asin}: ${m.aaid}`).join('\n');
     await navigator.clipboard.writeText(text);
@@ -88,7 +95,13 @@ const AsinAaidExtractor: React.FC = () => {
         <CardHeader
           title="ASIN & AAID Extractor"
           subheader="Paste HTML from your AAID page and extract unique ASIN: AAID mappings."
+                 action={
+            <IconButton onClick={clearAll}>
+              <DeleteIcon />
+            </IconButton>
+          }
         />
+          <Divider />
         <CardContent>
           <TextField
             label="Input HTML"
