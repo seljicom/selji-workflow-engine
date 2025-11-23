@@ -1,9 +1,29 @@
 import React from 'react';
-import { AppBar, Box, Container, Tab, Tabs, Toolbar, Typography } from '@mui/material';
+import {
+  AppBar,
+  Box,
+  Container,
+  Tab,
+  Tabs,
+  Toolbar,
+  Typography
+} from '@mui/material';
+
 import WorkflowIcon from '@mui/icons-material/Hub';
 import BuildIcon from '@mui/icons-material/Build';
+import ApiIcon from '@mui/icons-material/CloudSync';
+import SettingsIcon from '@mui/icons-material/Settings';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import SecurityIcon from '@mui/icons-material/Security';
+
 import AsinAaidExtractor from './components/AsinAaidExtractor';
-import { APP_VERSION } from './version';
+import PaApiExecutor from './components/PaApiExecutor';
+import PaApiTestPanel from './components/PaApiTestPanel';
+import SettingsManager from './components/SettingsManager';
+import SystemHealth from './components/SystemHealth';
+import LogViewer from './components/LogViewer';
+import SecretsManager from './components/SecretsManager';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -13,7 +33,6 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
   return (
     <div
       role="tabpanel"
@@ -22,11 +41,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`workflow-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
   );
 }
@@ -50,16 +65,13 @@ const App: React.FC = () => {
       <AppBar position="static" color="default" elevation={1}>
         <Toolbar>
           <WorkflowIcon sx={{ mr: 1 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            SELJI Workflow Engine v{APP_VERSION}
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.7 }}>
-            
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            SELJI Workflow Engine
           </Typography>
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 6 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tabs
             value={value}
@@ -75,11 +87,40 @@ const App: React.FC = () => {
               {...a11yProps(0)}
             />
             <Tab
-              label="Future Workflow"
-              icon={<WorkflowIcon />}
+              label="PA API Executor"
+              icon={<ApiIcon />}
               iconPosition="start"
-              disabled
               {...a11yProps(1)}
+            />
+            <Tab
+              label="PA API Tester"
+              icon={<ApiIcon />}
+              iconPosition="start"
+              {...a11yProps(2)}
+            />
+            <Tab
+              label="Settings"
+              icon={<SettingsIcon />}
+              iconPosition="start"
+              {...a11yProps(3)}
+            />
+            <Tab
+              label="System Health"
+              icon={<HealthAndSafetyIcon />}
+              iconPosition="start"
+              {...a11yProps(4)}
+            />
+            <Tab
+              label="Logs"
+              icon={<ListAltIcon />}
+              iconPosition="start"
+              {...a11yProps(5)}
+            />
+            <Tab
+              label="Secrets"
+              icon={<SecurityIcon />}
+              iconPosition="start"
+              {...a11yProps(6)}
             />
           </Tabs>
         </Box>
@@ -87,15 +128,23 @@ const App: React.FC = () => {
         <TabPanel value={value} index={0}>
           <AsinAaidExtractor />
         </TabPanel>
-
         <TabPanel value={value} index={1}>
-          <Typography variant="h6" gutterBottom>
-            Coming soon
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            This tab is reserved for the next SELJI workflow module. The core layout, theming, and
-            state management are already wired so we can drop new tools here with minimal friction.
-          </Typography>
+          <PaApiExecutor />
+        </TabPanel>
+        <TabPanel value={value} index={2}>
+          <PaApiTestPanel />
+        </TabPanel>
+        <TabPanel value={value} index={3}>
+          <SettingsManager />
+        </TabPanel>
+        <TabPanel value={value} index={4}>
+          <SystemHealth />
+        </TabPanel>
+        <TabPanel value={value} index={5}>
+          <LogViewer />
+        </TabPanel>
+        <TabPanel value={value} index={6}>
+          <SecretsManager />
         </TabPanel>
       </Container>
     </Box>

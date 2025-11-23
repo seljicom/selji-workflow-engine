@@ -1,11 +1,14 @@
-
 const fs = require('fs');
 const path = './src/version.ts';
-let txt = fs.readFileSync(path,'utf8');
-let match = txt.match(/'(\d+)\.(\d+)\.(\d+)'/);
-let [_,maj,min,pat]=match;
-pat = Number(pat)+1;
-const newV = `'${maj}.${min}.${pat}'`;
-txt = txt.replace(/'\d+\.\d+\.\d+'/, newV);
+let txt = fs.readFileSync(path, 'utf8');
+const match = txt.match(/'(\d+)\.(\d+)\.(\d+)'/);
+if (!match) {
+  console.error('Could not find version in version.ts');
+  process.exit(1);
+}
+let [_, major, minor, patch] = match;
+const newPatch = Number(patch) + 1;
+const newVersion = `'${major}.${minor}.${newPatch}'`;
+txt = txt.replace(/'\d+\.\d+\.\d+'/, newVersion);
 fs.writeFileSync(path, txt);
-console.log("Version bumped to", newV);
+console.log('Version bumped to', newVersion);
