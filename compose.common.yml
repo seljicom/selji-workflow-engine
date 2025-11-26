@@ -1,0 +1,14 @@
+services:
+  backend:
+    networks:
+      - selji-net
+
+  frontend:
+    networks:
+      - selji-net
+    depends_on:
+      - backend
+
+networks:
+  selji-net:
+    driver: bridge

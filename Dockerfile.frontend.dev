@@ -1,0 +1,14 @@
+FROM node:20
+
+WORKDIR /app
+
+# Install deps based on the root package.json (contains Vite + React)
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Copy the rest of the project (src, vite.config.ts, etc.)
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev"]

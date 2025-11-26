@@ -1,0 +1,28 @@
+services:
+  backend:
+    container_name: selji-backend-prod
+    build:
+      context: ./server
+      dockerfile: Dockerfile.prod
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - EXTERNAL_DB_PATH=/nasdb/workflow.db
+      - SECRET_ENC_KEY=prodsecretkeyprodsecretkeyprodsecretkey1
+    ports:
+      - "4000:4000"
+    volumes:
+      - "C:/Users/test/Dropbox/selji:/nasdb"
+    restart: always
+
+  frontend:
+    container_name: selji-frontend-prod
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    environment:
+      - NODE_ENV=production
+      - VITE_API_BASE_URL=http://localhost:4000
+    ports:
+      - "5173:80"
+    restart: always
