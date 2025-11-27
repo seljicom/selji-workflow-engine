@@ -16,7 +16,9 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import SecurityIcon from '@mui/icons-material/Security';
+import LinkIcon from '@mui/icons-material/Link';
 
+import ShortUrlAsinExpander from './components/ShortUrlAsinExpander';
 import AsinAaidExtractor from './components/AsinAaidExtractor';
 import PaApiExecutor from './components/PaApiExecutor';
 import PaApiTestPanel from './components/PaApiTestPanel';
@@ -81,69 +83,78 @@ const App: React.FC = () => {
             scrollButtons="auto"
           >
             <Tab
+              label="Short URL ASIN Expander"
+              icon={<LinkIcon />}
+              iconPosition="start"
+              {...a11yProps(0)}
+            />
+            <Tab
               label="ASIN & AAID Extractor"
               icon={<BuildIcon />}
               iconPosition="start"
-              {...a11yProps(0)}
+              {...a11yProps(1)}
             />
             <Tab
               label="PA API Executor"
               icon={<ApiIcon />}
               iconPosition="start"
-              {...a11yProps(1)}
+              {...a11yProps(2)}
             />
             <Tab
               label="PA API Tester"
               icon={<ApiIcon />}
               iconPosition="start"
-              {...a11yProps(2)}
+              {...a11yProps(3)}
             />
             <Tab
               label="Settings"
               icon={<SettingsIcon />}
               iconPosition="start"
-              {...a11yProps(3)}
+              {...a11yProps(4)}
             />
             <Tab
               label="System Health"
               icon={<HealthAndSafetyIcon />}
               iconPosition="start"
-              {...a11yProps(4)}
+              {...a11yProps(5)}
             />
             <Tab
               label="Logs"
               icon={<ListAltIcon />}
               iconPosition="start"
-              {...a11yProps(5)}
+              {...a11yProps(6)}
             />
             <Tab
               label="Secrets"
               icon={<SecurityIcon />}
               iconPosition="start"
-              {...a11yProps(6)}
+              {...a11yProps(7)}
             />
           </Tabs>
         </Box>
 
         <TabPanel value={value} index={0}>
-          <AsinAaidExtractor />
+          <ShortUrlAsinExpander />
         </TabPanel>
         <TabPanel value={value} index={1}>
-          <PaApiExecutor />
+          <AsinAaidExtractor />
         </TabPanel>
         <TabPanel value={value} index={2}>
-          <PaApiTestPanel />
+          <PaApiExecutor />
         </TabPanel>
         <TabPanel value={value} index={3}>
-          <SettingsManager />
+          <PaApiTestPanel />
         </TabPanel>
         <TabPanel value={value} index={4}>
-          <SystemHealth />
+          <SettingsManager />
         </TabPanel>
         <TabPanel value={value} index={5}>
-          <LogViewer />
+          <SystemHealth />
         </TabPanel>
         <TabPanel value={value} index={6}>
+          <LogViewer />
+        </TabPanel>
+        <TabPanel value={value} index={7}>
           <SecretsManager />
         </TabPanel>
       </Container>
