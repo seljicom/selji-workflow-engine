@@ -13,7 +13,9 @@ import {
     LinearProgress,
     Snackbar,
     TextField,
-    Typography
+    Typography,
+    Tooltip,
+    Zoom
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -26,7 +28,7 @@ interface UrlResult {
 }
 
 const API_BASE =
-  (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4000';
+    (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 const parseInputToUrls = (raw: string): string[] => {
     if (!raw.trim()) return [];
@@ -181,6 +183,34 @@ const ShortUrlAsinExpander: React.FC = () => {
             showSnack('Failed to copy ASIN list');
         }
     };
+
+    const [copiedAsin, setCopiedAsin] = useState<string | null>(null);
+
+    const copySingleAsin = async (asin: string) => {
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(asin);
+            } else {
+                const temp = document.createElement('textarea');
+                temp.value = asin;
+                temp.style.position = 'fixed';
+                temp.style.opacity = '0';
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+            }
+
+            setCopiedAsin(asin);
+            showSnack(`Copied ASIN: ${asin}`);
+
+            // remove highlight after animation
+            setTimeout(() => setCopiedAsin(null), 800);
+        } catch {
+            showSnack('Failed to copy');
+        }
+    };
+
 
     const successCount = results.filter((r) => r.asin).length;
     const failureCount = results.filter((r) => r.error).length;
@@ -350,10 +380,70 @@ const ShortUrlAsinExpander: React.FC = () => {
                                             {r.url}
                                         </Typography>
                                         {r.asin && (
-                                            <Typography variant="body2">
-                                                ASIN: <strong>{r.asin}</strong>
-                                            </Typography>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 1.2,
+                                                    padding: '4px 6px',
+                                                    borderRadius: '6px',
+                                                    transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
+                                                    backgroundColor:
+                                                        copiedAsin === r.asin ? 'rgba(76, 175, 80, 0.12)' : 'transparent',
+                                                    boxShadow:
+                                                        copiedAsin === r.asin
+                                                            ? '0 0 0 4px rgba(76, 175, 80, 0.15)'
+                                                            : 'none',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(0,0,0,0.04)'
+                                                    }
+                                                }}
+                                            >
+                                                <Typography variant="body2">
+                                                    ASIN: <strong>{r.asin}</strong>
+                                                </Typography>
+
+                                                <Tooltip
+                                                    title="Copy ASIN"
+                                                    placement="top"
+                                                    TransitionComponent={Zoom}
+                                                >
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => copySingleAsin(r.asin!)}
+                                                        aria-label="Copy ASIN"
+                                                        sx={{
+                                                            padding: '3px',
+                                                            borderRadius: '6px',
+                                                            border: '1px solid rgba(0,0,0,0.18)',
+                                                            backgroundColor: '#fff',
+                                                            transition: 'transform 0.15s ease, box-shadow 0.2s ease',
+                                                            transform:
+                                                                copiedAsin === r.asin ? 'scale(1.13)' : 'scale(1.0)',
+                                                            boxShadow:
+                                                                copiedAsin === r.asin
+                                                                    ? '0 0 6px rgba(76,175,80,0.45)'
+                                                                    : 'none',
+                                                            '&:hover': {
+                                                                transform: 'scale(1.13)',
+                                                                backgroundColor: 'rgba(255,255,255,0.9)'
+                                                            },
+                                                            '&:active': {
+                                                                transform: 'scale(0.97)'
+                                                            }
+                                                        }}
+                                                    >
+                                                        <ContentCopyIcon
+                                                            sx={{
+                                                                fontSize: '15px',
+                                                                color: copiedAsin === r.asin ? 'green' : 'inherit'
+                                                            }}
+                                                        />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Box>
                                         )}
+
                                         {r.error && (
                                             <Typography variant="body2" color="error">
                                                 {r.error}
