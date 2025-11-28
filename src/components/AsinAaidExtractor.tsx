@@ -78,12 +78,20 @@ const AsinAaidExtractor: React.FC = () => {
   };
 
   const copyAsinAaid = async () => {
+    if (!mappings.length) {
+      showSnack('Nothing to copy yet');
+      return;
+    }
     const text = mappings.map((m) => `${m.asin}: ${m.aaid}`).join('\n');
     await navigator.clipboard.writeText(text);
     showSnack('ASIN: AAID list copied');
   };
 
   const copyAsinList = async () => {
+    if (!mappings.length) {
+      showSnack('Nothing to copy yet');
+      return;
+    }
     const text = mappings.map((m) => m.asin).join(',');
     await navigator.clipboard.writeText(text);
     showSnack('ASIN list copied');
@@ -95,21 +103,21 @@ const AsinAaidExtractor: React.FC = () => {
         <CardHeader
           title="ASIN & AAID Extractor"
           subheader="Paste HTML from your AAID page and extract unique ASIN: AAID mappings."
-                 action={
-            <IconButton onClick={clearAll}>
+          action={
+            <IconButton onClick={clearAll} aria-label="Clear input and results">
               <DeleteIcon />
             </IconButton>
           }
         />
-          <Divider />
+        <Divider />
         <CardContent>
           <TextField
             label="Input HTML"
             placeholder="Paste HTML here..."
             multiline
             minRows={8}
-            rows={8} // Initial number of rows
-            maxRows={8} // Maximum number of rows before scrolling
+            rows={8}
+            maxRows={8}
             fullWidth
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -143,11 +151,7 @@ const AsinAaidExtractor: React.FC = () => {
               ? `Unique pairs discovered: ${mappings.length}`
               : 'No results yet.'
           }
-          action={
-            mappings.length > 0
-          }
         />
-
         <Divider />
         <CardContent>
           {mappings.length === 0 && (
@@ -163,9 +167,9 @@ const AsinAaidExtractor: React.FC = () => {
                 sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}
               >
                 ASIN:AAID
-              <IconButton size="small" onClick={copyAsinAaid}>
-                <ContentCopyIcon fontSize="small"/>
-              </IconButton>
+                <IconButton size="small" onClick={copyAsinAaid}>
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
               </Typography>
 
               <Box
@@ -189,7 +193,7 @@ const AsinAaidExtractor: React.FC = () => {
               >
                 ASIN
                 <IconButton size="small" onClick={copyAsinList}>
-                  <ContentCopyIcon fontSize="small"/>
+                  <ContentCopyIcon fontSize="small" />
                 </IconButton>
               </Typography>
 

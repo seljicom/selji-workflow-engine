@@ -10,11 +10,15 @@ import {
   Divider,
   Snackbar,
   TextField,
-  Typography
+  Typography,
+  Collapse,
+  IconButton
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { useWorkflowStore } from '../store/workflowStore';
 
 const API_BASE =
   (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -33,18 +37,22 @@ const DEFAULT_REGION = 'us-east-1';
 const DEFAULT_HOST = 'webservices.amazon.com';
 
 const PaApiExecutor: React.FC = () => {
-  const [accessKey, setAccessKey] = useState('');
-  const [secretKey, setSecretKey] = useState('');
-  const [partnerTag, setPartnerTag] = useState('');
-  const [marketplace, setMarketplace] = useState(DEFAULT_MARKETPLACE);
-  const [region, setRegion] = useState(DEFAULT_REGION);
-  const [host, setHost] = useState(DEFAULT_HOST);
+  // Zustand-backed fields
+  const accessKey = useWorkflowStore((s) => s.paapi.accessKey);
+  const secretKey = useWorkflowStore((s) => s.paapi.secretKey);
+  const partnerTag = useWorkflowStore((s) => s.paapi.partnerTag);
+  const marketplace = useWorkflowStore((s) => s.paapi.marketplace);
+  const region = useWorkflowStore((s) => s.paapi.region);
+  const host = useWorkflowStore((s) => s.paapi.host);
+  const asins = useWorkflowStore((s) => s.paapi.asins);
+  const response = useWorkflowStore((s) => s.paapi.response);
+  const error = useWorkflowStore((s) => s.paapi.error);
+  const setPaapiField = useWorkflowStore((s) => s.setPaapiField);
 
-  const [asins, setAsins] = useState('');
+  // Local UI state
   const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState<any | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
+  const [credOpen, setCredOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [snack, setSnack] = useState<{
     open: boolean;
     msg: string;
@@ -58,28 +66,35 @@ const PaApiExecutor: React.FC = () => {
   const show = (msg: string, severity: 'success' | 'error' | 'info' = 'success') =>
     setSnack({ open: true, msg, severity });
 
-  const closeSnack = () => setSnack({ ...snack, open: false });
+  const closeSnack = () => setSnack((prev) => ({ ...prev, open: false }));
 
+  // Helpers to route error/response into the global store
+  const setError = (value: string | null) => setPaapiField('error', value);
+  const setResponse = (value: any | null) => setPaapiField('response', value);
+
+  // Always load config from backend on mount (DB is source of truth)
   useEffect(() => {
     const loadConfig = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/config/paapi`);
         if (!res.ok) return;
+
         const data: PaapiConfig | null = await res.json();
         if (data) {
-          setAccessKey(data.accessKey ?? '');
-          setSecretKey(data.secretKey ?? '');
-          setPartnerTag(data.partnerTag ?? '');
-          setMarketplace(data.marketplace || DEFAULT_MARKETPLACE);
-          setRegion(data.region || DEFAULT_REGION);
-          setHost(data.host || DEFAULT_HOST);
+          setPaapiField('accessKey', data.accessKey ?? '');
+          setPaapiField('secretKey', data.secretKey ?? '');
+          setPaapiField('partnerTag', data.partnerTag ?? '');
+          setPaapiField('marketplace', data.marketplace || DEFAULT_MARKETPLACE);
+          setPaapiField('region', data.region || DEFAULT_REGION);
+          setPaapiField('host', data.host || DEFAULT_HOST);
         }
       } catch {
-        // ignore UI-side
+        // ignore UI-side; user can still type manually
       }
     };
+
     loadConfig();
-  }, []);
+  }, [setPaapiField]);
 
   const saveConfig = async () => {
     try {
@@ -88,22 +103,25 @@ const PaApiExecutor: React.FC = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          accessKey: accessKey.trim(),
-          secretKey: secretKey.trim(),
-          partnerTag: partnerTag.trim(),
-          marketplace: marketplace.trim() || DEFAULT_MARKETPLACE,
-          region: region.trim() || DEFAULT_REGION,
-          host: host.trim() || DEFAULT_HOST
+          accessKey: (accessKey || '').trim(),
+          secretKey: (secretKey || '').trim(),
+          partnerTag: (partnerTag || '').trim(),
+          marketplace: (marketplace || '').trim() || DEFAULT_MARKETPLACE,
+          region: (region || '').trim() || DEFAULT_REGION,
+          host: (host || '').trim() || DEFAULT_HOST
         })
       });
-      const j = await res.json().catch(() => null);
+
+      const j = await res.json().catch(() => null as any);
+
       if (!res.ok) {
-        throw new Error(j?.error || 'Failed to save config');
+        show(j?.error || 'Failed to save PA API config', 'error');
+        return;
       }
-      show('PA API config saved');
+
+      show('PA API configuration saved');
     } catch (e: any) {
-      setError(e.message || 'Failed to save');
-      show(e.message || 'Failed to save', 'error');
+      show(e?.message || 'Failed to save PA API config', 'error');
     }
   };
 
@@ -111,7 +129,7 @@ const PaApiExecutor: React.FC = () => {
     setError(null);
     setResponse(null);
 
-    const asinList = asins
+    const asinList = (asins || '')
       .split(/[\s,]+/)
       .map((a) => a.trim())
       .filter(Boolean);
@@ -126,8 +144,17 @@ const PaApiExecutor: React.FC = () => {
       const res = await fetch(`${API_BASE}/api/paapi/get-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ asins: asinList })
+        body: JSON.stringify({
+          accessKey: (accessKey || '').trim(),
+          secretKey: (secretKey || '').trim(),
+          partnerTag: (partnerTag || '').trim(),
+          marketplace: (marketplace || '').trim() || DEFAULT_MARKETPLACE,
+          region: (region || '').trim() || DEFAULT_REGION,
+          host: (host || '').trim() || DEFAULT_HOST,
+          asins: asinList
+        })
       });
+
       const json = await res.json().catch(() => null);
 
       if (!res.ok) {
@@ -137,17 +164,27 @@ const PaApiExecutor: React.FC = () => {
       setResponse(json);
       show('PA API request successful');
     } catch (e: any) {
-      setError(e.message || 'Failed to execute');
-      show(e.message || 'Failed to execute', 'error');
+      const msg = e?.message || 'Failed to execute';
+      setError(msg);
+      show(msg, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const copyResponse = async () => {
-    if (!response) return;
-    await navigator.clipboard.writeText(JSON.stringify(response, null, 2));
-    show('Response copied');
+  const handleCopyResponse = async () => {
+    if (!response) {
+      show('Nothing to copy yet', 'info');
+      return;
+    }
+
+    try {
+      const text = JSON.stringify(response, null, 2);
+      await navigator.clipboard.writeText(text);
+      show('Response JSON copied');
+    } catch {
+      show('Failed to copy response', 'error');
+    }
   };
 
   return (
@@ -155,81 +192,127 @@ const PaApiExecutor: React.FC = () => {
       <Card elevation={3} sx={{ mb: 3 }}>
         <CardHeader
           title="PA API Executor"
-          subheader="Configure credentials and connection for Amazon Product Advertising API, then run GetItems."
+          subheader="Execute Amazon Product Advertising API 5.0 calls with your stored credentials."
         />
         <Divider />
         <CardContent>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Credentials
-          </Typography>
-          <Box sx={{ display: 'grid', gap: 2, mb: 3 }}>
-            <TextField
-              label="Access Key"
-              fullWidth
-              value={accessKey}
-              onChange={(e) => setAccessKey(e.target.value)}
-            />
-            <TextField
-              label="Secret Key"
-              fullWidth
-              value={secretKey}
-              onChange={(e) => setSecretKey(e.target.value)}
-            />
-          </Box>
-
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            PA API Settings
-          </Typography>
-          <Box sx={{ display: 'grid', gap: 2, mb: 3 }}>
-            <TextField
-              label="Partner Tag (Associate Tag)"
-              fullWidth
-              value={partnerTag}
-              onChange={(e) => setPartnerTag(e.target.value)}
-              helperText="Example: selji0c-20"
-            />
-            <TextField
-              label="Marketplace"
-              fullWidth
-              value={marketplace}
-              onChange={(e) => setMarketplace(e.target.value)}
-              helperText={`Default: ${DEFAULT_MARKETPLACE}`}
-            />
-            <TextField
-              label="Region"
-              fullWidth
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              helperText={`Default: ${DEFAULT_REGION}`}
-            />
-            <TextField
-              label="Host"
-              fullWidth
-              value={host}
-              onChange={(e) => setHost(e.target.value)}
-              helperText={`Default: ${DEFAULT_HOST}`}
-            />
-          </Box>
-
-          <Button
-            variant="outlined"
-            startIcon={<SaveIcon />}
-            onClick={saveConfig}
-            sx={{ mb: 3 }}
+          {/* Credentials section (collapsible) */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              mb: 1,
+              mt: 1
+            }}
+            onClick={() => setCredOpen((o) => !o)}
           >
-            Save Config
-          </Button>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              Credentials
+            </Typography>
+            <IconButton
+              size="small"
+              sx={{
+                transform: credOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.25s ease'
+              }}
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </Box>
 
+          <Collapse in={credOpen} timeout="auto" unmountOnExit>
+            <Box sx={{ display: 'grid', gap: 2, mb: 3, mt: 1 }}>
+              <TextField
+                label="Access Key"
+                fullWidth
+                value={accessKey}
+                onChange={(e) => setPaapiField('accessKey', e.target.value)}
+              />
+              <TextField
+                label="Secret Key"
+                fullWidth
+                type="password"
+                value={secretKey}
+                onChange={(e) => setPaapiField('secretKey', e.target.value)}
+              />
+              <TextField
+                label="Partner Tag (Associate Tag)"
+                fullWidth
+                value={partnerTag}
+                onChange={(e) => setPaapiField('partnerTag', e.target.value)}
+                helperText="Example: selji0c-20"
+              />
+            </Box>
+          </Collapse>
+
+          {/* Settings section (collapsible) */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              mb: 1,
+              mt: 2
+            }}
+            onClick={() => setSettingsOpen((o) => !o)}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              PA API Settings
+            </Typography>
+            <IconButton
+              size="small"
+              sx={{
+                transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.25s ease'
+              }}
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </Box>
+
+          <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
+            <Box sx={{ display: 'grid', gap: 2, mb: 3 }}>
+              <TextField
+                label="Marketplace"
+                fullWidth
+                value={marketplace}
+                onChange={(e) => setPaapiField('marketplace', e.target.value)}
+                helperText={`Default: ${DEFAULT_MARKETPLACE}`}
+              />
+              <TextField
+                label="Region"
+                fullWidth
+                value={region}
+                onChange={(e) => setPaapiField('region', e.target.value)}
+                helperText={`Default: ${DEFAULT_REGION}`}
+              />
+              <TextField
+                label="Host"
+                fullWidth
+                value={host}
+                onChange={(e) => setPaapiField('host', e.target.value)}
+                helperText={`Default: ${DEFAULT_HOST}`}
+              />
+            </Box>
+          </Collapse>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* ASIN input */}
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            ASINs
+            ASINs (comma or space separated)
           </Typography>
           <TextField
-            label="ASINs (comma or space separated)"
+            label="ASINs"
+            placeholder="B001JZ5PZA, B07XJ8C8F7, ..."
             fullWidth
             multiline
             minRows={3}
             value={asins}
-            onChange={(e) => setAsins(e.target.value)}
+            onChange={(e) => setPaapiField('asins', e.target.value)}
           />
 
           {error && (
@@ -238,36 +321,45 @@ const PaApiExecutor: React.FC = () => {
             </Alert>
           )}
 
-          <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+          <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button
               variant="contained"
               startIcon={<PlayArrowIcon />}
               onClick={execute}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={20} /> : 'Execute'}
+              Execute
             </Button>
             <Button
               variant="outlined"
-              startIcon={<ContentCopyIcon />}
-              onClick={copyResponse}
-              disabled={!response}
+              startIcon={<SaveIcon />}
+              onClick={saveConfig}
+              disabled={loading}
             >
-              Copy Response
+              Save Config
             </Button>
+            {loading && <CircularProgress size={24} />}
           </Box>
         </CardContent>
       </Card>
 
       <Card elevation={3}>
-        <CardHeader title="Response" />
+        <CardHeader
+          title="PA API Response"
+          action={
+            <IconButton onClick={handleCopyResponse} aria-label="Copy response JSON">
+              <ContentCopyIcon />
+            </IconButton>
+          }
+        />
         <Divider />
         <CardContent>
-          {!response && !loading && (
+          {!response && (
             <Typography color="text.secondary">
-              Execute a PA API request to see the JSON response here.
+              Execute a request to see the raw PA API response here.
             </Typography>
           )}
+
           {response && (
             <Box
               component="pre"
@@ -275,8 +367,9 @@ const PaApiExecutor: React.FC = () => {
                 backgroundColor: '#f5f5f5',
                 p: 2,
                 borderRadius: 1,
-                maxHeight: 500,
+                maxHeight: 400,
                 overflow: 'auto',
+                fontFamily: 'monospace',
                 fontSize: 13
               }}
             >
